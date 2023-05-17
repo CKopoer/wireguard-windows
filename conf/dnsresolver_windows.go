@@ -7,7 +7,6 @@ package conf
 
 import (
 	"log"
-	"net/netip"
 	"time"
 	"unsafe"
 
@@ -63,21 +62,19 @@ func resolveHostnameOnce(name string) (resolvedIPString string, err error) {
 		return
 	}
 	defer windows.FreeAddrInfoW(result)
-	var v6 netip.Addr
+
 	for ; result != nil; result = result.Next {
 		if result.Family != windows.AF_INET && result.Family != windows.AF_INET6 {
 			continue
 		}
 		addr := (*winipcfg.RawSockaddrInet)(unsafe.Pointer(result.Addr)).Addr()
-		if addr.Is4() {
+		if addr.Is6() {
 			return addr.String(), nil
-		} else if !v6.IsValid() && addr.Is6() {
-			v6 = addr
+		} else if addr.Is4() {
+			return addr.String(), nil
 		}
 	}
-	if v6.IsValid() {
-		return v6.String(), nil
-	}
+
 	err = windows.WSAHOST_NOT_FOUND
 	return
 }
